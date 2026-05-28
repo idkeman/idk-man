@@ -4,7 +4,30 @@
     <meta charset="UTF-8">
     <title>Loading...</title>
 </head>
+    <style>
+        #centerCopyBtn {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  padding: 32px 48px;
+  font-size: 2rem;
+  background: linear-gradient(135deg, #1e90ff, #0047ab);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 0 32px rgba(0, 140, 255, 0.7);
+  cursor: pointer;
+  z-index: 9000;
+}
+
+#centerCopyBtn:hover {
+  background: linear-gradient(135deg, #1562bf, #0072ff);
+  box-shadow: 0 0 40px rgba(0,180,255,1.2);
+}
+        </style>
 <body>
+    <button id="centerCopyBtn" onclick="copynpaste()">Open Cool Link (Center Button)</button>
     <script>
 function copynpaste() {
     const newTab = window.open();
