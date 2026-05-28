@@ -779,11 +779,7 @@ console.log("IT WORKS")
 </html>`; 
 
     // Open a new about:blank tab
-    const newTab = window.open('about:blank','_blank');
-    if (newTab) {
-        newTab.document.write(htmlSourceCode);
-        newTab.document.close();
-    } else {
+ else {
         // Fallback if pop-up blocked
         alert('Please allow pop-ups to load the content.');
         // Or redirect to a fallback URL if needed
