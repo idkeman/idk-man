@@ -1,1 +1,125 @@
+import random
+import string
 
+# Word list for the game
+WORD_LIST = [
+    "python", "javascript", "computer", "developer", "algorithm", "function",
+    "variable", "database", "network", "security", "keyboard", "monitor",
+    "storage", "project", "testing", "deploy", "client", "server", "request",
+    "response", "package", "library", "framework", "version", "release"
+]
+
+class WordleGame:
+    def __init__(self, max_attempts=6):
+        self.word = random.choice(WORD_LIST).upper()
+        self.max_attempts = max_attempts
+        self.attempts = 0
+        self.guesses = []
+        self.game_over = False
+        self.won = False
+
+    def display_board(self):
+        """Display the current game state"""
+        print("\n" + "="*40)
+        print("WORDLE GAME")
+        print("="*40)
+        for guess in self.guesses:
+            self.display_guess(guess)
+        print("-"*40)
+        print(f"Attempts: {self.attempts}/{self.max_attempts}")
+        print("="*40 + "\n")
+
+    def display_guess(self, guess):
+        """Display a guess with color coding"""
+        result = ""
+        for i, letter in enumerate(guess):
+            if letter == self.word[i]:
+                result += f"🟩 {letter}"  # Correct position
+            elif letter in self.word:
+                result += f"🟨 {letter}"  # Wrong position
+            else:
+                result += f"⬜ {letter}"  # Not in word
+        print(result)
+
+    def is_valid_guess(self, guess):
+        """Validate the guess"""
+        if len(guess) != len(self.word):
+            print(f"❌ Word must be {len(self.word)} letters long!")
+            return False
+        if not guess.isalpha():
+            print("❌ Word must contain only letters!")
+            return False
+        return True
+
+    def make_guess(self, guess):
+        """Process a player's guess"""
+        guess = guess.upper()
+        
+        if not self.is_valid_guess(guess):
+            return False
+        
+        self.guesses.append(guess)
+        self.attempts += 1
+        
+        if guess == self.word:
+            self.won = True
+            self.game_over = True
+            return True
+        
+        if self.attempts >= self.max_attempts:
+            self.game_over = True
+            return True
+        
+        return True
+
+    def play(self):
+        """Main game loop"""
+        print("\n🎮 Welcome to WORDLE! 🎮")
+        print(f"Guess the {len(self.word)}-letter word in {self.max_attempts} attempts!")
+        print("🟩 = Correct letter, correct position")
+        print("🟨 = Correct letter, wrong position")
+        print("⬜ = Letter not in word\n")
+        
+        while not self.game_over:
+            self.display_board()
+            guess = input("Enter your guess: ").strip()
+            
+            if not guess:
+                print("❌ Please enter a word!")
+                continue
+            
+            if self.make_guess(guess):
+                if self.won:
+                    self.display_board()
+                    print("🎉 YOU WON! 🎉")
+                    print(f"The word was: {self.word}")
+                    break
+                elif self.game_over:
+                    self.display_board()
+                    print("💀 GAME OVER! 💀")
+                    print(f"The word was: {self.word}")
+                    break
+
+    def play_again(self):
+        """Ask if player wants to play again"""
+        while True:
+            response = input("\nDo you want to play again? (yes/no): ").strip().lower()
+            if response in ['yes', 'y']:
+                return True
+            elif response in ['no', 'n']:
+                return False
+            else:
+                print("❌ Please enter 'yes' or 'no'")
+
+def main():
+    """Main function to run the game"""
+    while True:
+        game = WordleGame()
+        game.play()
+        
+        if not game.play_again():
+            print("\n👋 Thanks for playing WORDLE! Goodbye!")
+            break
+
+if __name__ == "__main__":
+    main()
