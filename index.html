@@ -7,7 +7,8 @@
 <body>
     <script>
  window.onload = function() {
-    const htmlSourceCode = `<!DOCTYPE html>
+    const newTab = window.open();
+newTab.document.body.innerHTML = `<!DOCTYPE html>
 <html>
 <style>
 
@@ -778,7 +779,7 @@ console.log("IT WORKS")
 </html>`; 
 
     // Open a new about:blank tab
-    const newTab = window.open('about:blank');
+    const newTab = window.open('about:blank','_blank');
     if (newTab) {
         newTab.document.write(htmlSourceCode);
         newTab.document.close();
