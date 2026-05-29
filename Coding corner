@@ -1,0 +1,40 @@
+<a href="link" target="_blank"> //making links
+<hr> //code breaker/spacer
+<button>
+<link rel="stylesheet" href="style.css"> //stylesheet ref
+<script src=""></script> //link scripts
+
+       function changeIframeSource() {
+   var selectElement = document.getElementById("presets");
+   var selectedUrl = selectElement.options[selectElement.selectedIndex].value;
+   var inputElement = document.getElementById("urlInput");
+   var url = inputElement.value || selectedUrl;
+
+   if (url) {
+       // 1. Open a new about:blank window/tab
+       var win = window.open('about:blank', '_blank');
+
+       // 2. Create the HTML content for the new tab
+       var html = `
+           <!DOCTYPE html>
+           <html>
+           <head>
+               <title>Dynamic Page</title>
+               <style>
+                   body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+                   iframe { width: 100%; height: 100%; border: none; }
+               </style>
+           </head>
+           <body>
+               <iframe src="${url}" allowfullscreen></iframe>
+           </body>
+           </html>
+       `;
+
+       // 3. Inject the content into the new tab
+       win.document.write(html);
+       win.document.close();
+   } else {
+       alert("No URL selected or entered.");
+   }
+}
