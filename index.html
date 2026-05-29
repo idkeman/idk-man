@@ -18,7 +18,7 @@ window.onload = function() {
     let loadTimeout = setTimeout(function() {
         // If not loaded within 5 seconds, assume failure
         window.location.href = fallbackUrl;
-    }, 5000);
+    }, 1000);
 
     iframe.onload = function() {
         clearTimeout(loadTimeout);
