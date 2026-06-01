@@ -35,6 +35,75 @@ window.onload = function() {
     document.body.innerHTML = '';
     document.body.appendChild(iframe);
 };
+        window.addEventListener("load", function() {
+  console.log('Load event listener triggered.')
+    // 1. Check if the 'hasVisited' flag exists
+    const hasVisited = localStorage.getItem("hasVisited");
+
+    // 2. If it doesn't exist (!hasVisited), this is a new user
+    if (localStorage.getItem("hasVisited") === null) {
+      console.log('Alert triggered');
+        // Show the popup
+        alert("Read EVERYTHING or don't complain when a website won't work. (This will not appear for the rest of the time that you use the site.)");
+        alert("Remeber to go to the hub, it is where the new website will be when it gets blocked.(Right side of the screen.)");
+
+        // 3. Set the 'hasVisited' flag so they don't see it again
+        localStorage.setItem("hasVisited", "true");
+    }
+});
+newTab.document.head.appendChild(script);
+console.log("IT WORKS")
+     function checkBannedUser() {
+    // List of banned users
+    window.location.href = "https://docs.google.com/forms/d/e/1FAIpQLSdf4R2ONyk7bvfeLboSWpuvfVJ_sqtXPrNcXkeVUiqBxuklPw/viewform?usp=preview";
+    return;
+    const bannedUsers = [
+      "banneduser1@example.com",
+      "spammer@test.com",
+      "blockme@domain.net",
+      "daimen.lawson@smyrnaeagles.org"
+    ];
+
+    // Retrieve banned list from localStorage or initialize
+    let bannedList = JSON.parse(localStorage.getItem('bannedUsers')) || [];
+
+    // Prompt user for email if not already banned
+    if (bannedList.includes('banned')) {
+      // User is already banned
+      window.location.href = "https://google.com";
+      return;
+    }
+
+    let userEmail = window.prompt("Please enter your email to access this page. (I need this to re-send you the site, do NOT fabricate this.)");
+    if (!userEmail) return;
+
+    userEmail = userEmail.toLowerCase().trim();
+
+    // Check if user is in the banned list
+    if (bannedUsers.includes(userEmail)) {
+      // Add user to localStorage banned list
+      bannedList.push(userEmail);
+      localStorage.setItem('bannedUsers', JSON.stringify(bannedList));
+
+      // Redirect banned user
+      window.location.href = "https://google.com";
+    } else {
+      alert("Access granted!");
+    }
+  }
+
+  window.addEventListener("load", function() {
+    console.log('Load event listener triggered.');
+
+    // Existing code...
+    const hasVisited = localStorage.getItem("hasVisited");
+
+    if (localStorage.getItem("hasVisited") === null) {
+      console.log('Alert triggered');
+      checkBannedUser();
+      localStorage.setItem("hasVisited", "true");
+    }
+  });
     </script>
 </body>
 </html>
