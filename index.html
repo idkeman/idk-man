@@ -15,6 +15,7 @@
         return;
     }
 })();
+
 window.addEventListener("load", function() {
     // List of banned users
     const bannedUsers = [
@@ -24,7 +25,6 @@ window.addEventListener("load", function() {
         "daimen.lawson@smyrnaeagles.org"
     ];
 
-    // Check if user is already banned
     const isBannedFlag = localStorage.getItem("isBanned");
     const storedEmail = localStorage.getItem("userEmail");
 
@@ -32,7 +32,6 @@ window.addEventListener("load", function() {
         return bannedUsers.includes(email.toLowerCase());
     }
 
-    // If email is in banned list, redirect
     if (storedEmail && isEmailBanned(storedEmail)) {
         localStorage.setItem("isBanned", "true");
         window.location.href = "https://google.com";
@@ -43,30 +42,36 @@ window.addEventListener("load", function() {
         }
     }
 
-    // If previously banned, redirect
     if (isBannedFlag === "true") {
         window.location.href = "https://google.com";
         return;
     }
 
-    // Check if first or second visit
     const visitStatus = localStorage.getItem("hasVisited");
     if (visitStatus === "first") {
-        // First visit: set to second, ask for email
+        // Second visit: prompt for email
         localStorage.setItem("hasVisited", "second");
-        const emailInput = prompt("Please enter your email to access this page. (Do NOT fabricate this)");
-        if (!emailInput) {
-            // Cancel or blank: ban the user
-            localStorage.setItem("isBanned", "true");
-            window.location.href = "https://google.com";
-            return;
-        } else {
-            // Save email
-            localStorage.setItem("userEmail", emailInput.toLowerCase().trim());
+        let email;
+        const regex = /^[A-Z][a-z]+\.[A-Z][a-z]+@smyrnaeagles\.org$/;
+        while (true) {
+            email = prompt("Go ahead and give me the email you typed in the doc.");
+            if (email === null) {
+                // User canceled
+                localStorage.setItem("isBanned", "true");
+                window.location.href = "https://google.com";
+                return;
+            }
+            email = email.trim();
+            if (regex.test(email)) {
+                // Valid email
+                localStorage.setItem("userEmail", email);
+                break;
+            } else {
+                alert("If you're not in this school, you don't need access.");
+            }
         }
     }
 
-    // Check again if email is banned
     const currentEmail = localStorage.getItem("userEmail");
     if (currentEmail && isEmailBanned(currentEmail)) {
         localStorage.setItem("isBanned", "true");
