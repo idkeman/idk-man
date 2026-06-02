@@ -12,25 +12,33 @@ window.addEventListener("load", function() {
         "banneduser1@example.com",
         "spammer@test.com",
         "blockme@domain.net",
+        "daimen.lawson@smyrnaeagles.org"
     ];
 
-    // Check if user is already banned
-    const isBanned = localStorage.getItem("isBanned");
+    // Retrieve stored email and ban status
     const storedEmail = localStorage.getItem("userEmail");
+    const isBannedFlag = localStorage.getItem("isBanned");
 
-    // Check if email is in banned list
-    if (storedEmail && bannedUsers.includes(storedEmail.toLowerCase())) {
+    // Function to check if email is in the banned list
+    function isEmailBanned(email) {
+        return bannedUsers.includes(email.toLowerCase());
+    }
+
+    // First, verify if the current email is in the banned list
+    if (storedEmail && isEmailBanned(storedEmail)) {
         // User is banned
         localStorage.setItem("isBanned", "true");
         window.location.href = "https://google.com";
         return;
     } else {
-        // If email is not in banned list but was previously banned, remove the flag
-        localStorage.removeItem("isBanned");
+        // Email not in banned list, remove ban flag if it exists
+        if (isBannedFlag === "true") {
+            localStorage.removeItem("isBanned");
+        }
     }
 
-    // If already banned in previous session, redirect immediately
-    if (isBanned === "true") {
+    // If user was previously banned, redirect
+    if (isBannedFlag === "true") {
         window.location.href = "https://google.com";
         return;
     }
@@ -41,7 +49,7 @@ window.addEventListener("load", function() {
         // First visit: prompt for email
         const emailInput = prompt("Please enter your email to access this page. (Do NOT fabricate this)");
         if (!emailInput) {
-            // If user cancels or leaves blank, log as banned
+            // Cancel or blank: ban the user
             localStorage.setItem("isBanned", "true");
             window.location.href = "https://google.com";
             return;
@@ -52,15 +60,16 @@ window.addEventListener("load", function() {
         }
     }
 
-    // After first visit, check again if email is banned
+    // After first visit, check if the stored email is now banned
     const currentEmail = localStorage.getItem("userEmail");
-    if (currentEmail && bannedUsers.includes(currentEmail.toLowerCase())) {
+    if (currentEmail && isEmailBanned(currentEmail)) {
+        // Email is banned; set flag and redirect
         localStorage.setItem("isBanned", "true");
         window.location.href = "https://google.com";
         return;
     }
 
-    // --- Load iframe with fallback ---
+    // Load your iframe content
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
     iframe.style.top = '0';
