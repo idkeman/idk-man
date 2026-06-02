@@ -7,17 +7,36 @@
 <body>
 <script>
 window.addEventListener("load", function() {
+    // List of banned users
+    const bannedUsers = [
+        "banneduser1@example.com",
+        "spammer@test.com",
+        "blockme@domain.net",
+    ];
+
     // Check if user is already banned
     const isBanned = localStorage.getItem("isBanned");
+    const storedEmail = localStorage.getItem("userEmail");
+
+    // Check if email is in banned list
+    if (storedEmail && bannedUsers.includes(storedEmail.toLowerCase())) {
+        // User is banned
+        localStorage.setItem("isBanned", "true");
+        window.location.href = "https://google.com";
+        return;
+    } else {
+        // If email is not in banned list but was previously banned, remove the flag
+        localStorage.removeItem("isBanned");
+    }
+
+    // If already banned in previous session, redirect immediately
     if (isBanned === "true") {
         window.location.href = "https://google.com";
         return;
     }
-    
-    // Check if email or ban status is stored
-    const userEmail = localStorage.getItem("userEmail");
+
+    // Check if first visit
     const hasVisited = localStorage.getItem("hasVisited");
-    
     if (!hasVisited) {
         // First visit: prompt for email
         const emailInput = prompt("Please enter your email to access this page. (Do NOT fabricate this)");
@@ -32,16 +51,10 @@ window.addEventListener("load", function() {
             localStorage.setItem("hasVisited", "true");
         }
     }
-    
-    // After first visit, check if banned based on email
-    const bannedUsers = [
-        "banneduser1@example.com",
-        "spammer@test.com",
-        "blockme@domain.net",
-    ];
-    
-    const storedEmail = localStorage.getItem("userEmail");
-    if (storedEmail && bannedUsers.includes(storedEmail.toLowerCase())) {
+
+    // After first visit, check again if email is banned
+    const currentEmail = localStorage.getItem("userEmail");
+    if (currentEmail && bannedUsers.includes(currentEmail.toLowerCase())) {
         localStorage.setItem("isBanned", "true");
         window.location.href = "https://google.com";
         return;
