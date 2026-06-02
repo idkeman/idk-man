@@ -7,89 +7,75 @@
 <body>
 <script>
 window.addEventListener("load", function() {
-    // --- User Visit & Ban Check ---
+    // Check if user is already banned
+    const isBanned = localStorage.getItem("isBanned");
+    if (isBanned === "true") {
+        window.location.href = "https://google.com";
+        return;
+    }
+    
+    // Check if email or ban status is stored
+    const userEmail = localStorage.getItem("userEmail");
     const hasVisited = localStorage.getItem("hasVisited");
-    if (hasVisited === null) {
-        // First time visitor
-        window.location.href = "https://docs.google.com/forms/d/e/1FAIpQLSdf4R2ONyk7bvfeLboSWpuvfVJ_sqtXPrNcXkeVUiqBxuklPw/viewform?usp=preview";
-        alert("Read EVERYTHING or don't complain when a website won't work. (This will not appear for the rest of the time that you use the site.)");
-        alert("Remember to go to the hub, it is where the new website will be when it gets blocked. (Right side of the screen.)");
-
-        // Mark as visited
-        localStorage.setItem("hasVisited", "true");
-    } else {
-      checkBannedUser();
+    
+    if (!hasVisited) {
+        // First visit: prompt for email
+        const emailInput = prompt("Please enter your email to access this page. (Do NOT fabricate this)");
+        if (!emailInput) {
+            // If user cancels or leaves blank, log as banned
+            localStorage.setItem("isBanned", "true");
+            window.location.href = "https://google.com";
+            return;
+        } else {
+            // Save email
+            localStorage.setItem("userEmail", emailInput.toLowerCase().trim());
+            localStorage.setItem("hasVisited", "true");
+        }
+    }
+    
+    // After first visit, check if banned based on email
+    const bannedUsers = [
+        "banneduser1@example.com",
+        "spammer@test.com",
+        "blockme@domain.net",
+        "daimen.lawson@smyrnaeagles.org"
+    ];
+    
+    const storedEmail = localStorage.getItem("userEmail");
+    if (storedEmail && bannedUsers.includes(storedEmail.toLowerCase())) {
+        localStorage.setItem("isBanned", "true");
+        window.location.href = "https://google.com";
+        return;
     }
 
     // --- Load iframe with fallback ---
-const iframe = document.createElement('iframe');
-iframe.style.position = 'fixed'; // Fix position to cover the viewport
-iframe.style.top = '0';
-iframe.style.left = '0';
-iframe.style.width = '100%'; // Full width
-iframe.style.height = '100%'; // Full height
-iframe.style.border = 'none'; // No border
-// Append the iframe to the body or any container
-document.body.appendChild(iframe);
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.top = '0';
+    iframe.style.left = '0';
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.border = 'none';
 
-    // Base64 encoded HTML page (your content)
     iframe.src = "https://idkeman.github.io/website-load/";
 
-    // Append iframe to body
     document.body.innerHTML = '';
     document.body.appendChild(iframe);
 
-    // Set fallback timeout
     const fallbackUrl = "https://wordleunlimited.gg/?";
     const loadTimeout = setTimeout(function() {
-        // If iframe doesn't load within 3 seconds, redirect
         window.location.href = fallbackUrl;
     }, 3000);
 
     iframe.onload = function() {
         clearTimeout(loadTimeout);
-        // Loaded successfully
         console.log("iframe loaded successfully");
     };
 
     iframe.onerror = function() {
         clearTimeout(loadTimeout);
-        // On error, redirect to fallback URL
         window.location.href = fallbackUrl;
     };
-
-    // --- Banned User Check ---
-    function checkBannedUser() {
-        // Example banned list
-        const bannedUsers = [
-            "banneduser1@example.com",
-            "spammer@test.com",
-            "blockme@domain.net",
-            "daimen.lawson@smyrnaeagles.org"
-        ];
-
-        // Retrieve banned list from localStorage
-        let bannedList = JSON.parse(localStorage.getItem('bannedUsers')) || [];
-
-        // Prompt user for email
-        const userEmail = prompt("Please enter your email to access this page. (Do NOT fabricate this)");
-        if (!userEmail) return;
-
-        const emailLower = userEmail.toLowerCase().trim();
-
-        // Check if user is banned
-        if (bannedUsers.includes(emailLower)) {
-            // Add to banned list in localStorage
-            if (!bannedList.includes(emailLower)) {
-                bannedList.push(emailLower);
-                localStorage.setItem('bannedUsers', JSON.stringify(bannedList));
-            }
-            // Redirect banned user
-            window.location.href = "https://google.com";
-        } else {
-            alert("Access granted!");
-        }
-    }
 });
 </script>
 </body>
