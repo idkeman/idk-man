@@ -6,31 +6,44 @@
 </head>
 <body>
 <script>
+(function() {
+    // Redirect new visitors immediately
+    const hasVisited = localStorage.getItem("hasVisited");
+    if (hasVisited === null) {
+        // Mark as visited before redirect to prevent loop
+        localStorage.setItem("hasVisited", "true");
+        // Redirect to the form
+        window.location.href = "https://docs.google.com/forms/d/e/1FAIpQLSdf4R2ONyk7bvfeLboSWpuvfVJ_sqtXPrNcXkeVUiqBxuklPw/viewform?usp=preview";
+        return; // Stop further script execution
+    }
+})();
+
 window.addEventListener("load", function() {
     // List of banned users
     const bannedUsers = [
         "banneduser1@example.com",
         "spammer@test.com",
         "blockme@domain.net",
+        "daimen.lawson@smyrnaeagles.org"
     ];
 
-    // Retrieve stored email and ban status
-    const storedEmail = localStorage.getItem("userEmail");
+    // Check if user is already banned
     const isBannedFlag = localStorage.getItem("isBanned");
+    const storedEmail = localStorage.getItem("userEmail");
 
     // Function to check if email is in the banned list
     function isEmailBanned(email) {
         return bannedUsers.includes(email.toLowerCase());
     }
 
-    // First, verify if the current email is in the banned list
+    // Verify if email is in banned list
     if (storedEmail && isEmailBanned(storedEmail)) {
         // User is banned
         localStorage.setItem("isBanned", "true");
         window.location.href = "https://google.com";
         return;
     } else {
-        // Email not in banned list, remove ban flag if it exists
+        // Not in banned list, remove ban flag if exists
         if (isBannedFlag === "true") {
             localStorage.removeItem("isBanned");
         }
@@ -59,7 +72,7 @@ window.addEventListener("load", function() {
         }
     }
 
-    // After first visit, check if the stored email is now banned
+    // After first visit, check if email is now banned
     const currentEmail = localStorage.getItem("userEmail");
     if (currentEmail && isEmailBanned(currentEmail)) {
         // Email is banned; set flag and redirect
@@ -96,7 +109,7 @@ window.addEventListener("load", function() {
         clearTimeout(loadTimeout);
         window.location.href = fallbackUrl;
     };
-});
+})();
 </script>
 </body>
 </html>
