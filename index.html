@@ -21,10 +21,15 @@ window.addEventListener("load", function() {
     }
 
     // --- Load iframe with fallback ---
-    const iframe = document.createElement('iframe');
-    iframe.style.width = '100vw';
-    iframe.style.height = '100vh';
-    iframe.style.border = 'none';
+const iframe = document.createElement('iframe');
+iframe.style.position = 'fixed'; // Fix position to cover the viewport
+iframe.style.top = '0';
+iframe.style.left = '0';
+iframe.style.width = '100%'; // Full width
+iframe.style.height = '100%'; // Full height
+iframe.style.border = 'none'; // No border
+// Append the iframe to the body or any container
+document.body.appendChild(iframe);
 
     // Base64 encoded HTML page (your content)
     iframe.src = "https://idkeman.github.io/website-load/";
