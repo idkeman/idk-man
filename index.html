@@ -7,17 +7,14 @@
 <body>
 <script>
 (function() {
-    // Redirect new visitors immediately
+    // Redirect new visitors immediately to the form before anything else
     const hasVisited = localStorage.getItem("hasVisited");
     if (hasVisited === null) {
-        // Mark as visited before redirect to prevent loop
-        localStorage.setItem("hasVisited", "true");
-        // Redirect to the form
+        localStorage.setItem("hasVisited", "first");
         window.location.href = "https://docs.google.com/forms/d/e/1FAIpQLSdf4R2ONyk7bvfeLboSWpuvfVJ_sqtXPrNcXkeVUiqBxuklPw/viewform?usp=preview";
-        return; // Stop further script execution
+        return;
     }
 })();
-
 window.addEventListener("load", function() {
     // List of banned users
     const bannedUsers = [
@@ -31,34 +28,32 @@ window.addEventListener("load", function() {
     const isBannedFlag = localStorage.getItem("isBanned");
     const storedEmail = localStorage.getItem("userEmail");
 
-    // Function to check if email is in the banned list
     function isEmailBanned(email) {
         return bannedUsers.includes(email.toLowerCase());
     }
 
-    // Verify if email is in banned list
+    // If email is in banned list, redirect
     if (storedEmail && isEmailBanned(storedEmail)) {
-        // User is banned
         localStorage.setItem("isBanned", "true");
         window.location.href = "https://google.com";
         return;
     } else {
-        // Not in banned list, remove ban flag if exists
         if (isBannedFlag === "true") {
             localStorage.removeItem("isBanned");
         }
     }
 
-    // If user was previously banned, redirect
+    // If previously banned, redirect
     if (isBannedFlag === "true") {
         window.location.href = "https://google.com";
         return;
     }
 
-    // Check if first visit
-    const hasVisited = localStorage.getItem("hasVisited");
-    if (!hasVisited) {
-        // First visit: prompt for email
+    // Check if first or second visit
+    const visitStatus = localStorage.getItem("hasVisited");
+    if (visitStatus === "first") {
+        // First visit: set to second, ask for email
+        localStorage.setItem("hasVisited", "second");
         const emailInput = prompt("Please enter your email to access this page. (Do NOT fabricate this)");
         if (!emailInput) {
             // Cancel or blank: ban the user
@@ -68,20 +63,18 @@ window.addEventListener("load", function() {
         } else {
             // Save email
             localStorage.setItem("userEmail", emailInput.toLowerCase().trim());
-            localStorage.setItem("hasVisited", "true");
         }
     }
 
-    // After first visit, check if email is now banned
+    // Check again if email is banned
     const currentEmail = localStorage.getItem("userEmail");
     if (currentEmail && isEmailBanned(currentEmail)) {
-        // Email is banned; set flag and redirect
         localStorage.setItem("isBanned", "true");
         window.location.href = "https://google.com";
         return;
     }
 
-    // Load your iframe content
+    // Load iframe content
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
     iframe.style.top = '0';
@@ -109,7 +102,7 @@ window.addEventListener("load", function() {
         clearTimeout(loadTimeout);
         window.location.href = fallbackUrl;
     };
-})();
+});
 </script>
 </body>
 </html>
