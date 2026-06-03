@@ -7,9 +7,10 @@
 <body>
 <script>
 (function() {
-    // Redirect new visitors immediately to the form before anything else
+    // Check if the visitor is new by looking for 'hasVisited' in localStorage
     const hasVisited = localStorage.getItem("hasVisited");
     if (hasVisited === null) {
+        // First-time visitor: set flag and redirect to form
         localStorage.setItem("hasVisited", "first");
         window.location.href = "https://docs.google.com/forms/d/e/1FAIpQLSdf4R2ONyk7bvfeLboSWpuvfVJ_sqtXPrNcXkeVUiqBxuklPw/viewform?usp=preview";
         return;
@@ -17,7 +18,7 @@
 })();
 
 window.addEventListener("load", function() {
-    // List of banned users
+    // List of banned users' emails
     const bannedUsers = [
         "banneduser1@example.com",
         "spammer@test.com",
@@ -25,45 +26,52 @@ window.addEventListener("load", function() {
         "daimen.lawson@smyrnaeagles.org"
     ];
 
+    // Retrieve ban status and user email from localStorage
     const isBannedFlag = localStorage.getItem("isBanned");
     const storedEmail = localStorage.getItem("userEmail");
 
+    // Utility function to check if email is banned
     function isEmailBanned(email) {
+        if (!email) return false;
         return bannedUsers.includes(email.toLowerCase());
     }
 
+    // Check if stored email is banned
     if (storedEmail && isEmailBanned(storedEmail)) {
         localStorage.setItem("isBanned", "true");
-        window.location.href = "https://google.com";
+        window.location.href = "https://google.com"; // Redirect banned user
         return;
     } else {
+        // Clear ban flag if email is no longer banned
         if (isBannedFlag === "true") {
             localStorage.removeItem("isBanned");
         }
     }
 
+    // If ban flag is set, redirect immediately
     if (isBannedFlag === "true") {
         window.location.href = "https://google.com";
         return;
     }
 
+    // Handle first visit (or returning visitor)
     const visitStatus = localStorage.getItem("hasVisited");
     if (visitStatus === "first") {
-        // Second visit: prompt for email
+        // Transition to second visit: prompt for email
         localStorage.setItem("hasVisited", "second");
         let email;
         const regex = /^[A-Z][a-z]+\.[A-Z][a-z]+@smyrnaeagles\.org$/;
         while (true) {
             email = prompt("Go ahead and give me the email you typed in the doc.");
             if (email === null) {
-                // User canceled
+                // User canceled prompt
                 localStorage.setItem("isBanned", "true");
                 window.location.href = "https://google.com";
                 return;
             }
             email = email.trim();
             if (regex.test(email)) {
-                // Valid email
+                // Valid email: store and proceed
                 localStorage.setItem("userEmail", email);
                 break;
             } else {
@@ -72,6 +80,7 @@ window.addEventListener("load", function() {
         }
     }
 
+    // Check again if the user's email is banned
     const currentEmail = localStorage.getItem("userEmail");
     if (currentEmail && isEmailBanned(currentEmail)) {
         localStorage.setItem("isBanned", "true");
@@ -88,21 +97,28 @@ window.addEventListener("load", function() {
     iframe.style.height = '100%';
     iframe.style.border = 'none';
 
+    // Set source for iframe
     iframe.src = "https://idkeman.github.io/website-load/";
 
+    // Clear existing content and append iframe
     document.body.innerHTML = '';
     document.body.appendChild(iframe);
 
+    // Failsafe URL if iframe doesn't load
     const fallbackUrl = "https://wordleunlimited.gg/?";
+
+    // Set timeout to redirect if iframe takes too long to load
     const loadTimeout = setTimeout(function() {
         window.location.href = fallbackUrl;
     }, 3000);
 
+    // When iframe loads successfully, clear timeout
     iframe.onload = function() {
         clearTimeout(loadTimeout);
         console.log("iframe loaded successfully");
     };
 
+    // If iframe errors, redirect to fallback URL
     iframe.onerror = function() {
         clearTimeout(loadTimeout);
         window.location.href = fallbackUrl;
