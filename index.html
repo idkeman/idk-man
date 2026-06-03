@@ -73,6 +73,7 @@ window.addEventListener("load", function() {
             if (regex.test(email)) {
                 // Valid email: store and proceed
                 localStorage.setItem("userEmail", email);
+                alert("Recently added a proxy section!")
                 break;
             } else {
                 alert("@smyrnaeagles.org WITH CAPITAL INITIALS.");
