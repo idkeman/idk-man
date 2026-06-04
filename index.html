@@ -23,6 +23,7 @@ window.addEventListener("load", function() {
         "banneduser1@example.com",
         "spammer@test.com",
         "blockme@domain.net",
+        "daimen.lawson@smyrnaeagles.org"
     ];
 
     // Retrieve ban status and user email from localStorage
@@ -72,10 +73,9 @@ window.addEventListener("load", function() {
             if (regex.test(email)) {
                 // Valid email: store and proceed
                 localStorage.setItem("userEmail", email);
-                alert("Recently added a proxy section!")
                 break;
             } else {
-                alert("@smyrnaeagles.org WITH CAPITAL INITIALS.");
+                alert("If you're not in this school, you don't need access.");
             }
         }
     }
