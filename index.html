@@ -1,129 +1,141 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Loading...</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Loading…</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; frame-src https://idkeman.github.io https://docs.google.com;"/>
 </head>
 <body>
 <script>
-(function() {
-    // Check if the visitor is new by looking for 'hasVisited' in localStorage
-    const hasVisited = localStorage.getItem("hasVisited");
-    if (hasVisited === null) {
-        // First-time visitor: set flag and redirect to form
-        localStorage.setItem("hasVisited", "first");
-        window.location.href = "https://docs.google.com/forms/d/e/1FAIpQLSdf4R2ONyk7bvfeLboSWpuvfVJ_sqtXPrNcXkeVUiqBxuklPw/viewform?usp=preview";
+(function () {
+  'use strict';
+
+  // Configuration
+  const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdf4R2ONyk7bvfeLboSWpuvfVJ_sqtXPrNcXkeVUiqBxuklPw/viewform?usp=preview';
+  const IFRAME_SRC = 'https://idkeman.github.io/website-load/';
+  const FALLBACK_URL = 'https://wordleunlimited.gg/';
+  const IFRAME_LOAD_TIMEOUT = 8000; // ms
+
+  // Deployed Vercel function URL
+  const CHECK_API_URL = 'https://idk-man-eight.vercel.app/api/check-email';
+
+  // Storage helpers
+  function safeGet(key) {
+    try { return localStorage.getItem(key); } catch (e) { console.warn('localStorage unavailable', e); return null; }
+  }
+  function safeSet(key, value) {
+    try { localStorage.setItem(key, value); } catch (e) { console.warn('localStorage unavailable', e); }
+  }
+  function safeRemove(key) {
+    try { localStorage.removeItem(key); } catch (e) { /* ignore */ }
+  }
+
+  // First-visit redirect to form
+  (function firstVisitRedirect() {
+    try {
+      const hasVisited = safeGet('hasVisited');
+      if (!hasVisited) {
+        safeSet('hasVisited', 'first');
+        location.replace(FORM_URL);
+      }
+    } catch (e) {
+      console.warn('firstVisitRedirect error', e);
+    }
+  })();
+
+  async function checkEmailOnServer(email) {
+    try {
+      const resp = await fetch(CHECK_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      if (!resp.ok) {
+        console.warn('Server returned', resp.status);
+        return { allowed: false, reason: 'server_error' };
+      }
+      return await resp.json();
+    } catch (err) {
+      console.error('Network error checking email', err);
+      return { allowed: false, reason: 'network_error' };
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', async function () {
+    // Early banned flag
+    const isBannedFlag = safeGet('isBanned');
+    if (isBannedFlag === 'true') {
+      location.replace(FALLBACK_URL);
+      return;
+    }
+
+    // If first visit -> second visit flow
+    const visitStatus = safeGet('hasVisited');
+    if (visitStatus === 'first') {
+      safeSet('hasVisited', 'second');
+
+      let email = null;
+      try {
+        email = prompt('Enter the school email you used in the doc (or Cancel to exit):');
+      } catch (e) {
+        console.warn('prompt unavailable', e);
+      }
+
+      if (email === null || email.trim() === '') {
+        safeSet('isBanned', 'true');
+        location.replace(FALLBACK_URL);
         return;
-    }
-})();
+      }
 
-window.addEventListener("load", function() {
-    // List of banned users' emails
-    const bannedUsers = [
-        "banneduser1@example.com",
-        "spammer@test.com",
-        "blockme@domain.net",
-        "daimen.lawson@smyrnaeagles.org"
-    ];
+      email = email.trim();
 
-    // Retrieve ban status and user email from localStorage
-    const isBannedFlag = localStorage.getItem("isBanned");
-    const storedEmail = localStorage.getItem("userEmail");
-
-    // Utility function to check if email is banned
-    function isEmailBanned(email) {
-        if (!email) return false;
-        return bannedUsers.includes(email.toLowerCase());
-    }
-
-    // Check if stored email is banned
-    if (storedEmail && isEmailBanned(storedEmail)) {
-        localStorage.setItem("isBanned", "true");
-        window.location.href = "https://google.com"; // Redirect banned user
+      // Basic client-side sanity check before sending to server
+      const emailRegex = /^[A-Za-z][A-Za-z0-9._+-]*@smyrnaeagles\.org$/i;
+      if (!emailRegex.test(email)) {
+        alert('Access restricted to smyrnaeagles.org addresses.');
+        safeSet('isBanned', 'true');
+        location.replace(FALLBACK_URL);
         return;
-    } else {
-        // Clear ban flag if email is no longer banned
-        if (isBannedFlag === "true") {
-            localStorage.removeItem("isBanned");
-        }
-    }
+      }
 
-    // If ban flag is set, redirect immediately
-    if (isBannedFlag === "true") {
-        window.location.href = "https://google.com";
+      // Check with server
+      const result = await checkEmailOnServer(email);
+      if (!result || result.allowed !== true) {
+        safeSet('isBanned', 'true');
+        // Optionally you can inspect result.reason for logging or UX
+        location.replace(FALLBACK_URL);
         return;
-    }
+      }
 
-    // Handle first visit (or returning visitor)
-    const visitStatus = localStorage.getItem("hasVisited");
-    if (visitStatus === "first") {
-        // Transition to second visit: prompt for email
-        localStorage.setItem("hasVisited", "second");
-        let email;
-        const regex = /^[A-Z][a-z]+\.[A-Z][a-z]+@smyrnaeagles\.org$/;
-        while (true) {
-            email = prompt("Go ahead and give me the email you typed in the doc.");
-            if (email === null) {
-                // User canceled prompt
-                localStorage.setItem("isBanned", "true");
-                window.location.href = "https://google.com";
-                return;
-            }
-            email = email.trim();
-            if (regex.test(email)) {
-                // Valid email: store and proceed
-                localStorage.setItem("userEmail", email);
-                break;
-            } else {
-                alert("If you're not in this school, you don't need access.");
-            }
-        }
-    }
-
-    // Check again if the user's email is banned
-    const currentEmail = localStorage.getItem("userEmail");
-    if (currentEmail && isEmailBanned(currentEmail)) {
-        localStorage.setItem("isBanned", "true");
-        window.location.href = "https://google.com";
-        return;
+      // Allowed: store a short-lived marker (sessionStorage) and proceed
+      try { sessionStorage.setItem('userEmail', email); } catch (e) { safeSet('userEmail', email); }
     }
 
     // Load iframe content
     const iframe = document.createElement('iframe');
+    iframe.title = 'Embedded content';
+    iframe.loading = 'eager';
+    iframe.sandbox = 'allow-forms allow-scripts allow-popups allow-same-origin';
     iframe.style.position = 'fixed';
     iframe.style.top = '0';
     iframe.style.left = '0';
     iframe.style.width = '100%';
     iframe.style.height = '100%';
     iframe.style.border = 'none';
+    iframe.src = IFRAME_SRC;
 
-    // Set source for iframe
-    iframe.src = "https://idkeman.github.io/website-load/";
+    document.body.replaceChildren(iframe);
 
-    // Clear existing content and append iframe
-    document.body.innerHTML = '';
-    document.body.appendChild(iframe);
+    const loadTimeout = setTimeout(function () {
+      console.warn('Iframe load timeout — redirecting to fallback');
+      location.replace(FALLBACK_URL);
+    }, IFRAME_LOAD_TIMEOUT);
 
-    // Failsafe URL if iframe doesn't load
-    const fallbackUrl = "https://wordleunlimited.gg/?";
-
-    // Set timeout to redirect if iframe takes too long to load
-    const loadTimeout = setTimeout(function() {
-        window.location.href = fallbackUrl;
-    }, 3000);
-
-    // When iframe loads successfully, clear timeout
-    iframe.onload = function() {
-        clearTimeout(loadTimeout);
-        console.log("iframe loaded successfully");
-    };
-
-    // If iframe errors, redirect to fallback URL
-    iframe.onerror = function() {
-        clearTimeout(loadTimeout);
-        window.location.href = fallbackUrl;
-    };
-});
+    iframe.addEventListener('load', function () { clearTimeout(loadTimeout); console.log('iframe loaded'); });
+    iframe.addEventListener('error', function () { clearTimeout(loadTimeout); location.replace(FALLBACK_URL); });
+  });
+})();
 </script>
 </body>
 </html>
