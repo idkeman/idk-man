@@ -6,6 +6,234 @@
 </head>
 <body>
 <script>
+// Debug console GUI - activates with Ctrl+P when debug mode is enabled.
+// Debug mode is enabled if either localStorage.debugMode === '1' or URL contains ?debug=1
+(function(){
+    const DEBUG = (function(){
+        try {
+            return localStorage.getItem('debugMode') === '1' || /[?&]debug=1(\b|$)/.test(location.search);
+        } catch (e) {
+            return false;
+        }
+    })();
+
+    if (!DEBUG) {
+        // expose a helper to enable debug easily from console: localStorage.setItem('debugMode','1') then reload
+        window.enableDebug = function(){ try { localStorage.setItem('debugMode','1'); alert('Debug mode enabled - reload the page to activate console (or press Ctrl+P)'); } catch(e){} };
+        return;
+    }
+
+    // Minimal safe stringify for console arguments
+    function stringifyArg(arg) {
+        try {
+            if (typeof arg === 'string') return arg;
+            if (arg instanceof Error) return arg.stack || arg.message;
+            return JSON.stringify(arg, null, 2);
+        } catch (e) {
+            try { return String(arg); } catch (e2) { return '[unserializable]'; }
+        }
+    }
+
+    // DebugConsole singleton
+    const DebugConsole = {
+        logs: [],
+        autoScroll: true,
+        container: null,
+        textarea: null,
+        init() {
+            // Build overlay
+            const overlay = document.createElement('div');
+            overlay.id = 'debug-overlay';
+            Object.assign(overlay.style, {
+                position: 'fixed',
+                right: '10px',
+                bottom: '10px',
+                width: '80%',
+                height: '60%',
+                zIndex: 2147483647,
+                background: 'rgba(20,20,20,0.95)',
+                color: '#e6e6e6',
+                fontFamily: 'Menlo, Monaco, monospace',
+                fontSize: '12px',
+                border: '1px solid rgba(255,255,255,0.06)',
+                borderRadius: '6px',
+                display: 'flex',
+                flexDirection: 'column',
+                boxShadow: '0 8px 30px rgba(0,0,0,0.6)'
+            });
+
+            // Header
+            const header = document.createElement('div');
+            Object.assign(header.style, {
+                padding: '6px 8px',
+                borderBottom: '1px solid rgba(255,255,255,0.04)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+            });
+            header.innerHTML = '<strong style="color:#fff">Debug Console</strong>';
+
+            // Controls
+            const controls = document.createElement('div');
+            controls.style.marginLeft = 'auto';
+            controls.style.display = 'flex';
+            controls.style.gap = '6px';
+
+            function makeBtn(text, title, onClick) {
+                const btn = document.createElement('button');
+                btn.textContent = text;
+                btn.title = title || '';
+                Object.assign(btn.style, {
+                    background: 'transparent',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    color: '#ddd',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                });
+                btn.addEventListener('click', onClick);
+                return btn;
+            }
+
+            const clearBtn = makeBtn('Clear','Clear logs', () => { DebugConsole.logs = []; DebugConsole.render(); });
+            const copyBtn = makeBtn('Copy','Copy logs to clipboard', async () => { try { await navigator.clipboard.writeText(DebugConsole.logs.map(l=>`[${l.ts}] ${l.level.toUpperCase()}: ${l.msg}`).join('\n')); } catch(e){ alert('Copy failed'); } });
+            const downloadBtn = makeBtn('Download','Download logs as file', () => {
+                const blob = new Blob([DebugConsole.logs.map(l=>`[${l.ts}] ${l.level.toUpperCase()}: ${l.msg}`).join('\n')], {type:'text/plain'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'debug-logs.txt'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+            });
+            const closeBtn = makeBtn('Close','Close overlay', () => { DebugConsole.hide(); });
+
+            // Auto-scroll checkbox
+            const autoLabel = document.createElement('label');
+            autoLabel.style.display = 'flex'; autoLabel.style.alignItems = 'center'; autoLabel.style.gap = '6px';
+            const autoCheckbox = document.createElement('input');
+            autoCheckbox.type = 'checkbox'; autoCheckbox.checked = DebugConsole.autoScroll;
+            autoCheckbox.addEventListener('change', () => { DebugConsole.autoScroll = autoCheckbox.checked; });
+            autoLabel.appendChild(autoCheckbox);
+            autoLabel.appendChild(document.createTextNode('Auto-scroll'));
+            Object.assign(autoLabel.style, {color:'#bbb', fontSize:'12px'});
+
+            controls.appendChild(autoLabel);
+            controls.appendChild(clearBtn);
+            controls.appendChild(copyBtn);
+            controls.appendChild(downloadBtn);
+            controls.appendChild(closeBtn);
+
+            header.appendChild(controls);
+
+            // Search/filter
+            const filter = document.createElement('input');
+            filter.placeholder = 'Filter (text or level:ERROR, WARN, INFO, LOG)';
+            Object.assign(filter.style, {width:'100%', boxSizing:'border-box', padding:'6px 8px', border:'none', outline:'none', background:'rgba(255,255,255,0.02)', color:'#eee'});
+            filter.addEventListener('input', () => DebugConsole.render());
+
+            // Logs area
+            const logsArea = document.createElement('div');
+            logsArea.style.flex = '1 1 auto';
+            logsArea.style.overflow = 'auto';
+            logsArea.style.padding = '8px';
+
+            const pre = document.createElement('pre');
+            pre.style.margin = '0';
+            pre.style.whiteSpace = 'pre-wrap';
+            pre.style.wordBreak = 'break-word';
+            pre.style.color = '#ddd';
+            pre.style.fontSize = '12px';
+
+            logsArea.appendChild(pre);
+
+            // Footer with simple eval box (disabled by default for safety)
+            const footer = document.createElement('div');
+            Object.assign(footer.style, {padding:'6px 8px', borderTop:'1px solid rgba(255,255,255,0.04)', display:'flex', gap:'8px', alignItems:'center'});
+            const info = document.createElement('div');
+            info.textContent = 'Press Ctrl+P to toggle.';
+            info.style.color = '#bbb'; info.style.fontSize = '12px';
+
+            footer.appendChild(info);
+
+            overlay.appendChild(header);
+            overlay.appendChild(filter);
+            overlay.appendChild(logsArea);
+            overlay.appendChild(footer);
+
+            document.body.appendChild(overlay);
+
+            this.container = overlay;
+            this.textarea = pre;
+            this.filterInput = filter;
+
+            // make draggable by header
+            let isDown = false, startX=0, startY=0, startRight=0, startBottom=0;
+            header.style.cursor = 'move';
+            header.addEventListener('mousedown', function(e){ isDown = true; startX = e.clientX; startY = e.clientY; const rect = overlay.getBoundingClientRect(); startRight = window.innerWidth - rect.right; startBottom = window.innerHeight - rect.bottom; e.preventDefault(); });
+            document.addEventListener('mousemove', function(e){ if(!isDown) return; const dx = e.clientX - startX; const dy = e.clientY - startY; overlay.style.right = (startRight - dx) + 'px'; overlay.style.bottom = (startBottom - dy) + 'px'; });
+            document.addEventListener('mouseup', function(){ isDown = false; });
+
+            this.render();
+        },
+        add(entry){
+            this.logs.push(entry);
+            // Limit logs to avoid memory blowup
+            if (this.logs.length > 5000) this.logs.shift();
+            if (this.container) this.render();
+        },
+        render(){
+            if (!this.container) return;
+            const filter = (this.filterInput && this.filterInput.value) ? this.filterInput.value.toLowerCase() : '';
+            const lines = this.logs.filter(l => {
+                if (!filter) return true;
+                // support level:ERROR etc
+                const levelMatch = filter.match(/^level:(\w+)$/i);
+                if (levelMatch) return l.level.toLowerCase() === levelMatch[1].toLowerCase();
+                return l.msg.toLowerCase().includes(filter) || l.level.toLowerCase().includes(filter) || l.ts.toLowerCase().includes(filter);
+            }).map(l => `[${l.ts}] ${l.level.toUpperCase()}: ${l.msg}`);
+            this.textarea.textContent = lines.join('\n');
+            if (this.autoScroll) this.container.querySelector('div').scrollTop = this.container.querySelector('div').scrollHeight;
+        },
+        show(){ if (!this.container) this.init(); this.container.style.display = 'flex'; this.render(); },
+        hide(){ if (!this.container) return; this.container.style.display = 'none'; }
+    };
+
+    // Intercept console methods
+    ['log','info','warn','error'].forEach(level => {
+        try {
+            const orig = console[level].bind(console);
+            console[level] = function(...args){
+                try {
+                    const msg = args.map(stringifyArg).join(' ');
+                    DebugConsole.add({level, msg, ts: new Date().toISOString()});
+                } catch(e){}
+                orig(...args);
+            };
+        } catch(e){}
+    });
+
+    // Capture global errors
+    window.addEventListener('error', function(ev){
+        const msg = (ev && ev.message) ? (ev.message + (ev.filename ? ` at ${ev.filename}:${ev.lineno}:${ev.colno}` : '')) : String(ev);
+        DebugConsole.add({level:'error', msg, ts: new Date().toISOString()});
+    });
+
+    window.addEventListener('unhandledrejection', function(ev){
+        let reason = ev && ev.reason ? ev.reason : ev;
+        DebugConsole.add({level:'error', msg: 'UnhandledRejection: ' + stringifyArg(reason), ts: new Date().toISOString()});
+    });
+
+    // Keybind: Ctrl+P to toggle overlay
+    window.addEventListener('keydown', function(e){
+        if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
+            e.preventDefault();
+            if (!DebugConsole.container || DebugConsole.container.style.display === 'none') DebugConsole.show(); else DebugConsole.hide();
+        }
+    });
+
+    // Expose debug console and logs for console access
+    window.DebugConsole = DebugConsole;
+
+})();
+
 (function() {
     // Check if the visitor is new by looking for 'hasVisited' in localStorage
     const hasVisited = localStorage.getItem("hasVisited");
